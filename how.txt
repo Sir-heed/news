@@ -1,0 +1,10 @@
+- Setup the database
+python manage.py migrate
+
+- Start a Celery worker service (specify your Django project name):
+celery -A [project-name] worker --loglevel=info
+
+- Also, as an alternative, you can run the two steps above (worker and beat services) with only one command (recommended for development environment only):
+celery -A [project-name] worker --beat --scheduler django --loglevel=info
+
+Also you can add and manage your periodic tasks from the Django Admin interface.
