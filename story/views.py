@@ -1,8 +1,9 @@
 import requests
 from requests.exceptions import ConnectionError
 from django.db.utils import IntegrityError
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
+from django.template import loader
 from rest_framework import status, filters
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -18,8 +19,18 @@ news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
 
 def index(request):
     latest_news = Story.objects.order_by('id')[:20]
-    output = ', '.join([q.url for q in latest_news])
-    return HttpResponse(output)
+    template = loader.get_template('story/index.html')
+    context = {
+        'latest_news': latest_news,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+def detail(request, story_id):
+    story = get_object_or_404(Story, pk=story_id)
+    comments = Comment.objects.filter(parent=story.story_id)
+    return render(request, 'story/detail.html', {'story': story, 'comments': comments})
+
 
 class StoryViewSet(ModelViewSet):
     queryset = Story.objects.filter(editable=True)
@@ -52,6 +63,7 @@ class LatestNews(APIView):
                     r = requests.get(news.format(item))
                     if r.status_code == 200:
                         res = r.json()
+                        print("Story>>>>>>>>>>>>>>", res)
                         try:
                             Story.objects.create(
                                 by=res['by'] if 'by' in res else None,
@@ -67,11 +79,29 @@ class LatestNews(APIView):
                                 deleted=res['deleted'] if 'deleted' in res else None,
                                 editable=False
                             )
+                            if 'kids' in res:
+                                for item in res['kids']:
+                                    r = requests.get(news.format(item))
+                                    if r.status_code == 200:
+                                        res = r.json()
+                                        print("Comment>>>>>>>>>>>>>>", res)
+                                        try:
+                                            Comment.objects.create(
+                                                by = res['by'] if 'by' in res else None,
+                                                comment_id = res['id'],
+                                                parent = res['parent'] if 'parent' in res else None,
+                                                text = res['text'] if 'text' in res else None,
+                                                time = res['time'] if 'time' in res else None,
+                                                comment_type=res['type'] if 'type' in res else None
+                                            )
+                                        except IntegrityError:
+                                            print("Comment saved already")
+                                            pass
                         except IntegrityError:
                             print("Story saved already")
                             pass
-                else:
-                    return Response({
+                # else:
+                return Response({
                     'status':'success',
                     'message':'Data saved to database'
                 }, status=status.HTTP_201_CREATED)

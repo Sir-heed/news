@@ -38,9 +38,9 @@ class Comment(models.Model):
     by = models.CharField(max_length=100, null=True, blank=True)
     time = models.IntegerField(null=True, blank=True)
     dead = models.BooleanField(null=True, blank=True)
-    kids = ArrayField(models.IntegerField(), blank=True)
+    kids = ArrayField(models.IntegerField(), null=True, blank=True)
     parent = models.IntegerField(null=True, blank=True)
-    text = models.TextField()
+    text = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return self.comment_id
+        return str(self.comment_id)
