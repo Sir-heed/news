@@ -1,0 +1,48 @@
+import requests
+from datetime import datetime
+from .models import Item
+
+base_url = 'https://hacker-news.firebaseio.com/v0'
+news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
+
+def get_max_news_id():
+    r = requests.get(f'{base_url}/maxitem.json')
+    if r.status_code == 200:
+        return r.json()
+    else:
+        return None
+
+
+def get_latest_news():
+    max_ind = get_max_news_id()
+    if max_ind is not None:
+        max_ind = int(max_ind)
+        for item in range(max_ind - 100, max_ind):
+            r = requests.get(news.format(item))
+            if r.status_code == 200:
+                data = r.json()
+                print(data)
+                try:
+                    item = Item.objects.get(item_id=data.get('id'))
+                except Item.DoesNotExist:
+                    Item.objects.create(
+                        item_id = data.get('id'),
+                        deleted = data.get('deleted'),
+                        item_type = data.get('type'),
+                        by = data.get('by'),
+                        item_time = datetime.fromtimestamp(data.get('time')) if data.get('time') else None,
+                        dead = data.get('dead'),
+                        kids = data.get('kids'),
+                        text = data.get('text'),
+                        url = data.get('url'),
+                        title = data.get('title'),
+                        descendants = data.get('descendants'),
+                        score = data.get('score'),
+                        parent = data.get('parent'),
+                        parts = data.get('parts'),
+                        editable = False
+                    )
+            else:
+                print('Not Available')
+    else:
+        return None

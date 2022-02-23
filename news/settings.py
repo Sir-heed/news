@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'rest_framework',
     'story',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -91,7 +92,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "USER": config("DB_USER"),
-        "PASSWORD": config("PASSWORD"),
+        "PASSWORD": config("DB_PASSWORD"),
         "PORT": config("PORT", cast=int),
         "NAME": config("NAME"),
         "HOST": config("HOST"),
