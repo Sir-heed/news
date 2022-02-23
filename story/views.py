@@ -1,16 +1,15 @@
 import requests
 from requests.exceptions import ConnectionError
 from django.db.utils import IntegrityError
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
+from django.shortcuts import redirect, render, get_object_or_404
+from django.http import Http404, HttpResponse
 from django.template import loader
-from rest_framework import status, filters
-from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.views import APIView
+from django.core.paginator import Paginator
 
-from .models import Story, Comment
-from .serializers import StorySerializer
+from story.utils import get_latest_news
+
+from .models import Item
+from .forms import ItemForm, ItemFilterForm, SearchForm
 
 # Create your views here.
 top_stories_url = 'https://hacker-news.firebaseio.com/v0/topstories.json'
@@ -18,100 +17,78 @@ news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
 
 
 def index(request):
-    latest_news = Story.objects.order_by('id')[:20]
+    if Item.objects.count() == 0:
+        new_news = get_latest_news()
+    context = {}
+    latest_news = Item.objects.order_by('-id')
+    filter_form = ItemFilterForm(request.POST or None)
+    search_form = SearchForm(request.POST or None)
+    if filter_form.is_valid():
+        item_type = filter_form.cleaned_data['item_type']
+        latest_news = latest_news.filter(item_type=item_type)
+    if search_form.is_valid():
+        search = search_form.cleaned_data['search']
+        latest_news = latest_news.filter(text__contains=search)
     template = loader.get_template('story/index.html')
+    paginator = Paginator(latest_news, 5) # Show 25 news per page.
+    page_number = request.GET.get('page')
+    latest_news = paginator.get_page(page_number)
     context = {
         'latest_news': latest_news,
+        'filter_form': filter_form,
+        'search_form': search_form,
+        # 'page_obj': page_obj
     }
     return HttpResponse(template.render(context, request))
 
 
-def detail(request, story_id):
-    story = get_object_or_404(Story, pk=story_id)
-    comments = Comment.objects.filter(parent=story.story_id)
-    return render(request, 'story/detail.html', {'story': story, 'comments': comments})
+def detail(request, pk):
+    try:
+        item = Item.objects.get(id=pk)
+        parent = item.parent
+        if parent is not None:
+            try:
+                parent = Item.objects.get(item_id=parent)
+            except Item.DoesNotExist:
+                parent = None
+        print(parent)
+        return render(request, 'story/detail.html', {'item': item, 'parent': parent})
+    except Item.DoesNotExist:
+        raise Http404('Item does not exist')
 
 
-class StoryViewSet(ModelViewSet):
-    queryset = Story.objects.filter(editable=True)
-    serializer_class = StorySerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['story_type']
-
-    def list(self, request):
-        queryset = Story.objects.all()
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk):
-        story = Story.objects.get(pk=pk)
-        return Response(StorySerializer(story).data, status=status.HTTP_200_OK)
+def create_item(request):
+    context = {}
+    form = ItemForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect("story:index")
+    context['form']= form
+    return render(request, "story/create_item.html", context)
 
 
-class LatestNews(APIView):
-    def get(self, request):
-        try:
-            r = requests.get(top_stories_url)
-            if r.status_code == 200:
-                top_stories = r.json()
-                for item in top_stories[:20]:
-                    r = requests.get(news.format(item))
-                    if r.status_code == 200:
-                        res = r.json()
-                        print("Story>>>>>>>>>>>>>>", res)
-                        try:
-                            Story.objects.create(
-                                by=res['by'] if 'by' in res else None,
-                                descendants=res['descendants'] if 'descendants' in res else None,
-                                story_id=res['id'],
-                                kids=res['kids'] if 'kids' in res else None,
-                                score=res['score'] if 'score' in res else None,
-                                time=res['time'] if 'time' in res else None,
-                                title=res['title'] if 'title' in res else None,
-                                story_type=res['type'],
-                                url=res['url'] if 'url' in res else None,
-                                dead=res['dead'] if 'dead' in res else None,
-                                deleted=res['deleted'] if 'deleted' in res else None,
-                                editable=False
-                            )
-                            if 'kids' in res:
-                                for item in res['kids']:
-                                    r = requests.get(news.format(item))
-                                    if r.status_code == 200:
-                                        res = r.json()
-                                        print("Comment>>>>>>>>>>>>>>", res)
-                                        try:
-                                            Comment.objects.create(
-                                                by = res['by'] if 'by' in res else None,
-                                                comment_id = res['id'],
-                                                parent = res['parent'] if 'parent' in res else None,
-                                                text = res['text'] if 'text' in res else None,
-                                                time = res['time'] if 'time' in res else None,
-                                                comment_type=res['type'] if 'type' in res else None
-                                            )
-                                        except IntegrityError:
-                                            print("Comment saved already")
-                                            pass
-                        except IntegrityError:
-                            print("Story saved already")
-                            pass
-                # else:
-                return Response({
-                    'status':'success',
-                    'message':'Data saved to database'
-                }, status=status.HTTP_201_CREATED)
-            else:
-                return Response({
-                    'status':'failed',
-                    'message':'Unable to connect to hacker news'
-                }, status=status.HTTP_408_REQUEST_TIMEOUT)
-        except ConnectionError:
-            return Response({
-                'status': 'failed',
-                'message': 'Unable to connect to hacker news'
-            }, status=status.HTTP_408_REQUEST_TIMEOUT)
+def edit_item(request, pk):
+    context = {}
+    try:
+        item = Item.objects.get(id=pk)
+    except Item.DoesNotExist:
+        raise Http404('Item does not exist')
+    if item.editable == False:
+        raise Http404('Item cannot be edit')
+    form = ItemForm(request.POST or None, instance = item)
+    if form.is_valid():
+        form.save()
+        return redirect("story:index")
+    context["form"] = form
+    return render(request, "story/edit_item.html", context)
+
+
+def delete_item(request, pk):
+    try:
+        item = Item.objects.get(id=pk)
+    except Item.DoesNotExist:
+        raise Http404('Item does not exist')
+    if item.editable == False:
+        raise Http404('Item cannot be delete')
+    item.delete()
+    return redirect("story:index")

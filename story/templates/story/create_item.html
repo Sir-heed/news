@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+        .container {
+              width: 100%;
+              max-width: 80%;
+              margin-left: auto;
+              margin-right: auto;
+          }
+    </style>
+</head>
+<body>
+    <!-- NAV BAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand">News Store </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+              <a class="nav-link" href="{% url 'story:index' %}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link">Create Item <span class="sr-only">(current)</span></a>
+            </li>
+          </ul>
+        </div>
+    </nav>
+    <div class="container">
+    <form method="POST" enctype="multipart/form-data">
+        <!-- Security token -->
+        {% csrf_token %}
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+            <input name="{{ form.title.html_name }}" type="text" class="form-control" id="{{ form.title.id_for_label }}" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="{{ form.by.id_for_label }}">{{ form.by.label }}</label>
+            <input name="{{ form.by.html_name }}" type="text" class="form-control" id="{{ form.by.id_for_label }}" required>
+          </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <select name="{{ form.item_type.html_name }}" value="{{ form.item_type.value }}" id="{{ form.item_type.id_for_label }}" class="form-control" >
+                    {% for widget in form.item_type.subwidgets %}
+                        {{ widget }}
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- <div class="form-group col-md-6">
+                <label for="{{ form.country_code.id_for_label }}">{{ form.country_code.label }}</label>
+                <input name="{{ form.country_code.html_name }}" type="text" class="form-control" id="{{ form.country_code.id_for_label }}" required>
+            </div> -->
+        </div>
+        <!-- <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                <input name="{{ form.email.html_name }}" type="text" class="form-control" id="{{ form.email.id_for_label }}" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                <input name="{{ form.phone.html_name }}" type="text" class="form-control" id="{{ form.phone.id_for_label }}" required>
+            </div>
+        </div> -->
+        <div class="form-group">
+            <label for="{{ form.text.id_for_label }}">{{ form.text.label }}</label>
+            <!-- <input name="{{ form.text.html_name }}" type="text" class="form-control" id="{{ form.text.id_for_label }}" required> -->
+            <textarea name="{{ form.text.html_name }}" type="text" class="form-control" id="{{ form.text.id_for_label }}" required></textarea>
+        </div>
+        <input type="submit" value="submit" class="btn btn-primary">
+      </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+</html>
