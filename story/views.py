@@ -6,7 +6,7 @@ from django.http import Http404, HttpResponse
 from django.template import loader
 from django.core.paginator import Paginator
 
-from story.utils import get_latest_news
+from story.tasks import get_latest_news
 
 from .models import Item
 from .forms import ItemForm, ItemFilterForm, SearchForm

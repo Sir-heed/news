@@ -151,7 +151,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CELERY_BEAT_SCHEDULE = {
     "sample_task": {
-        "task": "story.tasks.update_stories",
+        "task": "story.tasks.get_latest_news",
         "schedule": 300.0,
     },
 }
