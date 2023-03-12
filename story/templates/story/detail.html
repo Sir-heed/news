@@ -16,10 +16,8 @@
         <div class="card-body">
             {%if item.title is not None %}
                 <h5 class="card-title">{{ item.title }}</h5>
-            {% else %}
-            <h5 class="card-title">Title not available</h5>
             {% endif %}
-          <p class="card-text"><strong>Type:</strong> {{ item.item_type }}</p>
+          <h3 class="card-text"><strong>Type:</strong> {{ item.item_type }}</h3>
           <p class="card-text"><strong>Author:</strong> {{ item.by }}</p>
           <p class="card-text"><strong>Item created date:</strong> {{ item.item_time }}</p>
           <p class="card-text"><strong>Text:</strong> {{ item.text }}</p>
@@ -27,11 +25,37 @@
           <p class="card-text"><strong>Read More:</strong> {{ item.url }}</p>
           <p class="card-text"><strong>Number of comments:</strong> {{ item.descendants }}</p>
           <p class="card-text"><strong>Item Score:</strong> {{ item.score }}</p>
-          <p class="card-text"><strong>Item parent:</strong> {{ item.parent }}</p>
+          <!-- <p class="card-text"><strong>Item parent:</strong> {{ item.parent }}</p> -->
           <p class="card-text"><strong>Item parts:</strong> {{ item.parts }}</p>
           {% if parent is not None %}
-          <a href="{% url 'story:detail' parent.id %}" class="btn btn-primary">Back to the item parent</a>
+          <h3>Parent: </h3>
+            {% if parent.deleted != True %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ parent.item_type | title }} by {{ parent.by | title }}</h5>
+                    <p class="card-text">{{ parent.text }}</p>
+                    <a href="{% url 'story:detail' parent.id %}" class="btn btn-primary">View Details</a>
+                    {% if parent.editable %}
+                    <a href="{% url 'story:item-delete' parent.id %}" class="btn btn-danger">Delete</a>
+                    {% endif %}
+                </div>
+            {% endif %}
           {% endif %}
+          {% if kid_qs is not None %}
+          <h3>Comments: </h3>
+            {% for kid in kid_qs %}
+                {% if kid.deleted != True %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ kid.item_type | title }} by {{ kid.by | title }}</h5>
+                        <p class="card-text">{{ kid.text }}</p>
+                        <a href="{% url 'story:detail' kid.id %}" class="btn btn-primary">View Details</a>
+                        {% if kid.editable %}
+                        <a href="{% url 'story:item-delete' kid.id %}" class="btn btn-danger">Delete</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+          {% endif %}
+          <!-- <a href="{{request.META.HTTP_REFERER|escape}}" class="btn btn-primary">Back to List</a> -->
           <a href="{% url 'story:index' %}" class="btn btn-primary">Back to List</a>
           {% if item.editable %}
           <a href="{% url 'story:item-edit' item.id %}" class="btn btn-primary">Edit Item</a>

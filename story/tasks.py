@@ -5,8 +5,9 @@ from datetime import datetime
 from celery.schedules import crontab
 from celery.utils.log import get_task_logger
 from django.db.utils import IntegrityError
-from.utils import get_max_news_id
+from .utils import get_max_news_id
 from .models import Item
+from core.celery import APP
 
 top_stories_url = 'https://hacker-news.firebaseio.com/v0/topstories.json'
 news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
@@ -14,12 +15,12 @@ news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
 logger = get_task_logger(__name__)
 
 
-@shared_task
+@shared_task()
 def sample_task():
     logger.info("The sample task just ran.")
     
 
-@shared_task
+@APP.task()
 def get_latest_news():
     max_ind = get_max_news_id()
     if max_ind is not None:
@@ -28,7 +29,6 @@ def get_latest_news():
             r = requests.get(news.format(item))
             if r.status_code == 200:
                 data = r.json()
-                print(data)
                 try:
                     item = Item.objects.get(item_id=data.get('id'))
                 except Item.DoesNotExist:
@@ -50,6 +50,6 @@ def get_latest_news():
                         editable = False
                     )
             else:
-                print('Not Available')
+                pass
     else:
         return None

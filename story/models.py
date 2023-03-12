@@ -30,4 +30,4 @@ class Item(models.Model):
     modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.story_id
+        return str(self.item_id)

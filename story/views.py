@@ -1,12 +1,8 @@
-import requests
-from requests.exceptions import ConnectionError
-from django.db.utils import IntegrityError
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import redirect, render
 from django.http import Http404, HttpResponse
 from django.template import loader
 from django.core.paginator import Paginator
-
-from story.tasks import get_latest_news
+from .tasks import get_latest_news
 
 from .models import Item
 from .forms import ItemForm, ItemFilterForm, SearchForm
@@ -18,7 +14,7 @@ news = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
 
 def index(request):
     if Item.objects.count() == 0:
-        new_news = get_latest_news()
+        get_latest_news.delay()
     context = {}
     latest_news = Item.objects.order_by('-id')
     filter_form = ItemFilterForm(request.POST or None)
@@ -46,13 +42,16 @@ def detail(request, pk):
     try:
         item = Item.objects.get(id=pk)
         parent = item.parent
-        if parent is not None:
+        kids = item.kids
+        kid_qs = None
+        if parent:
             try:
                 parent = Item.objects.get(item_id=parent)
             except Item.DoesNotExist:
                 parent = None
-        print(parent)
-        return render(request, 'story/detail.html', {'item': item, 'parent': parent})
+        if kids:
+            kid_qs = Item.objects.filter(item_id__in=kids)
+        return render(request, 'story/detail.html', {'item': item, 'parent': parent, 'kid_qs': kid_qs})
     except Item.DoesNotExist:
         raise Http404('Item does not exist')
 
