@@ -191,8 +191,8 @@ SPECTACULAR_SETTINGS = {
         "displayRequestDuration": True
     },
     'UPLOADED_FILES_USE_URL': True,
-    'TITLE': 'PollEasy Application API',
-    'DESCRIPTION': 'PollEasy API Doc',
+    'TITLE': 'Quickcheck Test Application API',
+    'DESCRIPTION': 'Quickcheck Test API Doc',
     'VERSION': '1.0.0',
     'LICENCE': {'name': 'BSD License'},
     'CONTACT': {'name': 'Saheed Adedeji', 'email': 'sademolaadedeji@gmail.com'},
